@@ -1,43 +1,46 @@
 #!/bin/bash
-# setup.sh — Install Phoenix-RTOS build dependencies di GitHub Codespaces
+# setup.sh — Persiapkan environment Phoenix-RTOS di GitHub Codespaces
 # Dijalankan otomatis saat postCreateCommand
 
 set -e
 
-echo "🔧 Installing Phoenix-RTOS build dependencies..."
+echo "🔧 Installing build tools..."
 
 sudo apt-get update -q
 
+# Tools dasar dan QEMU (mode serial/nographic untuk Codespaces)
 sudo apt-get install -y \
     make \
-    gcc \
-    g++ \
-    gcc-multilib \
-    g++-multilib \
-    libc6-dev-i386 \
-    lib32gcc-11-dev \
-    genext2fs \
-    e2fsprogs \
-    qemu-system-x86 \
-    scons \
-    autoconf \
-    automake \
-    libtool \
-    pkg-config \
-    libssl-dev \
-    libusb-1.0-0-dev \
-    bzip2 \
+    wget \
+    curl \
     xz-utils \
+    bzip2 \
+    unzip \
     python3 \
     python3-pip \
-    wget \
+    qemu-system-x86 \
+    genext2fs \
+    e2fsprogs \
     bc \
-    rsync
+    rsync \
+    scons
 
 echo "📦 Initializing git submodules..."
 git submodule update --init --recursive
 
 echo ""
-echo "✅ Semua dependency sudah terinstall!"
-echo "👉 Untuk build, jalankan:"
-echo "   TARGET=ia32-generic-qemu source phoenix-rtos-build/build.sh all"
+echo "✅ Setup selesai!"
+echo ""
+echo "══════════════════════════════════════════"
+echo "  CARA BUILD Phoenix-RTOS di Codespaces  "
+echo "══════════════════════════════════════════"
+echo ""
+echo "  Build menggunakan Docker (WAJIB):"
+echo "  TARGET=ia32-generic-qemu ./docker-build.sh all"
+echo ""
+echo "  Jalankan QEMU (serial mode):"
+echo "  TARGET=ia32-generic-qemu CONSOLE=serial ./docker-build.sh qemu"
+echo ""
+echo "  Atau cukup:"
+echo "  ./run-qemu.sh"
+echo "══════════════════════════════════════════"
