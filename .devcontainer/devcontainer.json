@@ -1,11 +1,18 @@
 {
   "name": "Phoenix-RTOS Build Environment",
-  "image": "phoenixrtos/build:latest",
-  "features": {
-    "ghcr.io/devcontainers/features/git:1": {},
-    "ghcr.io/devcontainers/features/github-cli:1": {}
+  "build": {
+    "dockerfile": "Dockerfile",
+    "context": ".."
   },
-  "postCreateCommand": "git submodule update --init --recursive",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {
+      "version": "latest"
+    },
+    "ghcr.io/devcontainers/features/github-cli:1": {
+      "version": "latest"
+    }
+  },
+  "postCreateCommand": "git submodule update --init --recursive && echo '✅ Submodules ready! Run: TARGET=ia32-generic-qemu source phoenix-rtos-build/build.sh all'",
   "containerEnv": {
     "TARGET": "ia32-generic-qemu"
   },
@@ -14,19 +21,20 @@
       "extensions": [
         "ms-vscode.cpptools",
         "ms-vscode.cpptools-extension-pack",
-        "ms-vscode.cmake-tools",
         "mhutchie.git-graph",
-        "eamodio.gitlens"
+        "eamodio.gitlens",
+        "ms-vscode.hexeditor"
       ],
       "settings": {
         "terminal.integrated.defaultProfile.linux": "bash",
         "C_Cpp.default.compilerPath": "/usr/bin/gcc",
-        "C_Cpp.default.cStandard": "c11"
+        "C_Cpp.default.cStandard": "c11",
+        "C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
+        "editor.formatOnSave": true
       }
     }
   },
-  "remoteUser": "root",
-  "mounts": [],
+  "remoteUser": "vscode",
   "forwardPorts": [],
-  "postStartCommand": "echo '✅ Phoenix-RTOS dev environment ready! Run: ./docker-build.sh' && git submodule status"
+  "mounts": []
 }
