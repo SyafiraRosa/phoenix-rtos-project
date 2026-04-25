@@ -1,32 +1,27 @@
 #!/bin/bash
-# setup.sh — Install dependencies Phoenix-RTOS di GitHub Codespaces
-# Dijalankan otomatis saat postCreateCommand (cepat, <2 menit)
-# Build toolchain dilakukan manual setelah container siap.
+# setup.sh — Install build dependencies untuk Phoenix-RTOS di GitHub Codespaces
+# Dijalankan otomatis via postCreateCommand (harus CEPAT dan TIDAK boleh gagal)
+# Submodule init dan toolchain build dilakukan MANUAL setelah container siap.
 
 set -e
 
 echo "════════════════════════════════════════════════════"
-echo "  🔧 Phoenix-RTOS Environment Setup (No Docker)   "
+echo "  🔧 Installing Phoenix-RTOS Build Dependencies   "
 echo "════════════════════════════════════════════════════"
 
-# Verifikasi kita di Ubuntu (bukan Alpine)
-if [ -f /etc/os-release ]; then
-    . /etc/os-release
-    echo "📋 OS Detected: $PRETTY_NAME"
-    if [[ "$ID" != "ubuntu" ]]; then
-        echo "⚠️  WARNING: Expected Ubuntu but got $ID"
-        echo "   Pastikan container sudah di-rebuild!"
-    fi
-fi
-
-# ─── Install semua dependency yang dibutuhkan ─────────────────────────────────
 echo ""
-echo "📦 [1/3] Installing required build tools..."
+echo "📋 OS: $(. /etc/os-release && echo "$PRETTY_NAME")"
+echo ""
 
-sudo apt-get update -q && sudo apt-get install -y \
+# Install semua dependency dari apt (Ubuntu 22.04)
+echo "📦 Installing packages via apt-get..."
+
+sudo apt-get update -q
+sudo apt-get install -y --no-install-recommends \
     build-essential \
     mtd-utils \
     autoconf \
+    automake \
     texinfo \
     genext2fs \
     libtool \
@@ -39,47 +34,31 @@ sudo apt-get update -q && sudo apt-get install -y \
     bzip2 \
     xz-utils \
     qemu-system-x86 \
-    scons
+    scons \
+    patch
 
-echo "✅ Build tools installed."
+echo "✅ Packages installed."
 
-# ─── Init submodules ───────────────────────────────────────────────────────────
-echo ""
-echo "📦 [2/3] Initializing git submodules..."
-git submodule update --init --recursive
-echo "✅ Submodules ready."
-
-# ─── Siapkan direktori toolchain ──────────────────────────────────────────────
-echo ""
-echo "📁 [3/3] Preparing toolchain directory..."
-
-TOOLCHAIN_DIR="$HOME/toolchains"
-TOOLCHAIN_BIN="$TOOLCHAIN_DIR/i386-pc-phoenix/i386-pc-phoenix/bin"
-mkdir -p "$TOOLCHAIN_DIR"
-
-# Tambahkan PATH ke .bashrc (persisten)
+# Siapkan direktori toolchain dan set PATH
+TOOLCHAIN_BIN="$HOME/toolchains/i386-pc-phoenix/i386-pc-phoenix/bin"
 if ! grep -q "i386-pc-phoenix" "$HOME/.bashrc" 2>/dev/null; then
     echo "export PATH=\$PATH:$TOOLCHAIN_BIN" >> "$HOME/.bashrc"
-    echo "✅ PATH entry added to .bashrc"
 fi
 
-echo "✅ Ready."
-
-# ─── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════════════════"
-echo "  ✅ Setup awal selesai!                           "
+echo "  ✅ Dependency setup selesai!                     "
 echo "════════════════════════════════════════════════════"
 echo ""
-echo "  ⚠️  LANGKAH SELANJUTNYA — Build toolchain dulu:"
-echo "  Jalankan sekali saja (±30-60 menit):"
+echo "  Lanjutkan secara MANUAL di terminal:"
 echo ""
-echo "  bash .devcontainer/build-toolchain.sh"
+echo "  1️⃣  Init submodules:"
+echo "     git submodule update --init --recursive"
 echo ""
-echo "  Setelah toolchain selesai, baru build Phoenix-RTOS:"
-echo "  TARGET=ia32-generic-qemu CONSOLE=serial \\"
-echo "    ./phoenix-rtos-build/build.sh all"
+echo "  2️⃣  Build cross-compiler (sekali saja, ~30-60 menit):"
+echo "     bash .devcontainer/build-toolchain.sh"
 echo ""
-echo "  Jalankan QEMU:"
-echo "  ./run-qemu.sh"
+echo "  3️⃣  Build Phoenix-RTOS:"
+echo "     TARGET=ia32-generic-qemu CONSOLE=serial \\"
+echo "       ./phoenix-rtos-build/build.sh all"
 echo "════════════════════════════════════════════════════"
