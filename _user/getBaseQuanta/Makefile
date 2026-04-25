@@ -1,4 +1,4 @@
 NAME := getBaseQuanta
 LOCAL_SRCS := main.c
-SRCS += _user/include/syscalls_custom.c
+SRCS += include/syscalls_custom.c
 include $(binary.mk)
