@@ -1,18 +1,11 @@
 {
   "name": "Phoenix-RTOS Build Environment",
-  "build": {
-    "dockerfile": "Dockerfile",
-    "context": ".."
-  },
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu-22.04",
   "features": {
-    "ghcr.io/devcontainers/features/git:1": {
-      "version": "latest"
-    },
-    "ghcr.io/devcontainers/features/github-cli:1": {
-      "version": "latest"
-    }
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
   },
-  "postCreateCommand": "git submodule update --init --recursive && echo '✅ Submodules ready! Run: TARGET=ia32-generic-qemu source phoenix-rtos-build/build.sh all'",
+  "postCreateCommand": "bash .devcontainer/setup.sh",
   "containerEnv": {
     "TARGET": "ia32-generic-qemu"
   },
@@ -29,12 +22,9 @@
         "terminal.integrated.defaultProfile.linux": "bash",
         "C_Cpp.default.compilerPath": "/usr/bin/gcc",
         "C_Cpp.default.cStandard": "c11",
-        "C_Cpp.default.intelliSenseMode": "linux-gcc-x86",
-        "editor.formatOnSave": true
+        "C_Cpp.default.intelliSenseMode": "linux-gcc-x86"
       }
     }
   },
-  "remoteUser": "vscode",
-  "forwardPorts": [],
-  "mounts": []
+  "remoteUser": "vscode"
 }
