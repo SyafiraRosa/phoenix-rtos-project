@@ -66,3 +66,16 @@ __attribute__((naked)) int maxChildrenInRanges(int x, int y, int *pid, int *coun
 {
 	__asm__("movl $106, %eax; int $0x80; ret");
 }
+
+
+/* Step 28: Group management wrappers (syscall 107=setProcessGroup, 108=getProcessGroup) */
+__attribute__((naked)) int setProcessGroup(pid_t pid, int group)
+{
+	__asm__("movl $107, %eax; int $0x80; ret");
+}
+
+
+__attribute__((naked)) int getProcessGroup(pid_t pid)
+{
+	__asm__("movl $108, %eax; int $0x80; ret");
+}

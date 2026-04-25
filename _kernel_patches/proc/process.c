@@ -181,6 +181,7 @@ int proc_start(void (*initthr)(void *), void *arg, const char *path)
 		Last modified by Syafira
 	*/
 	process->quanta = 1;
+	process->group = GROUP_A; /* Step 27: default to Group A */
 
 #ifdef NOMMU
 	process->entries = NULL;
@@ -1763,4 +1764,30 @@ int proc_getQuanta(int pid)
     quanta = process->quanta;
     proc_put(process);
     return quanta;
+}
+
+/* Step 27: Group management */
+int proc_setGroup(int pid, int group)
+{
+    process_t *process = proc_find(pid);
+    if (process == NULL)
+        return 0;
+    if (group < GROUP_A || group > GROUP_C) {
+        proc_put(process);
+        return 0;
+    }
+    process->group = group;
+    proc_put(process);
+    return 1;
+}
+
+int proc_getGroup(int pid)
+{
+    int group;
+    process_t *process = proc_find(pid);
+    if (process == NULL)
+        return -1;
+    group = process->group;
+    proc_put(process);
+    return group;
 }

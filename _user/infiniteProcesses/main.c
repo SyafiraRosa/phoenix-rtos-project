@@ -2,29 +2,36 @@
 #include <stdlib.h>
 #include <unistd.h>
 
+/*
+ * infiniteProcesses - Create N child processes that loop forever
+ * Used to test scheduling with setGroup/getGroup and ps CPU time.
+ *
+ * Usage: infiniteProcesses <number_of_children>
+ */
 int main(int argc, char *argv[])
 {
-    if (argc != 2) {
-        printf("Incorrect number of parameters.\n");
-        return 1;
-    }
+	int i, children;
 
-    int children = atoi(argv[1]);
+	if (argc != 2) {
+		printf("Incorrect number of parameters.\n");
+		printf("Usage: infiniteProcesses <children>\n");
+		return 1;
+	}
 
-    printf("Create %d children.\n", children);
+	children = atoi(argv[1]);
+	printf("Create %d children.\n", children);
 
-    for (int i = 0; i < children; ++i) {
-        if (fork() == 0) {
-            while (1) {
-                for (volatile int j = 0; j < 800000; ++j);
-            }
-        }
-    }
+	for (i = 0; i < children; ++i) {
+		if (fork() == 0) {
+			/* Child: loop forever */
+			while (1)
+				;
+		}
+	}
 
-    // parent
-    while (1) {
-        for (volatile int j = 0; j < 200000; ++j);
-    }
+	/* Parent: loop forever */
+	while (1)
+		;
 
-    return 0;
+	return 0;
 }

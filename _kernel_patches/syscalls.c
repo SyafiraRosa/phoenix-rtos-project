@@ -92,6 +92,23 @@ int syscalls_getQuantaForProcess(void *ustack)
     return proc_getQuanta(pid);
 }
 
+/* Step 28: Group syscall handlers */
+int syscalls_setProcessGroup(void *ustack)
+{
+    pid_t pid;
+    int group;
+    GETFROMSTACK(ustack, pid_t, pid, 0);
+    GETFROMSTACK(ustack, int, group, 1);
+    return proc_setGroup(pid, group);
+}
+
+int syscalls_getProcessGroup(void *ustack)
+{
+    pid_t pid;
+    GETFROMSTACK(ustack, pid_t, pid, 0);
+    return proc_getGroup(pid);
+}
+
 void syscalls_debug(void *ustack)
 {
 	const char *s;

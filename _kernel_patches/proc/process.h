@@ -27,6 +27,16 @@
 
 #define MAX_PID MAX_ID
 
+/*
+ * Scheduling group for ABC weighted round-robin
+ * Added by Syafira (Step 27)
+ */
+typedef enum {
+	GROUP_A = 0, /* default: quanta x1 */
+	GROUP_B = 1, /* quanta x2 */
+	GROUP_C = 2, /* quanta x4 */
+} process_group_t;
+
 typedef struct _process_t {
 	lock_t lock;
 
@@ -39,6 +49,7 @@ typedef struct _process_t {
 		Last modified by Syafira
 	*/
 	int quanta;
+	int group; /* scheduling group: GROUP_A/B/C */
 
 	char *path;
 	char **argv;
@@ -149,5 +160,9 @@ extern int proc_setBaseQuanta(int quanta);
 extern int proc_getBaseQuanta();
 extern int proc_setQuanta(int pid, int quanta);
 extern int proc_getQuanta(int pid);
+
+/* Step 27-28: group management */
+extern int proc_setGroup(int pid, int group);
+extern int proc_getGroup(int pid);
 
 #endif

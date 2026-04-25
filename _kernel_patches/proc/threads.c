@@ -594,19 +594,18 @@ int _threads_schedule(unsigned int n, cpu_context_t *context, void *arg)
 				continue;
 			}
 
-			/* Set Quanta (1:2:4) */
+			/* Set Quanta based on group (Step 29): A=1x, B=2x, C=4x */
 			if (selected->process == NULL) {
 				selected->currentQuanta = 1;
 			}
 			else {
-				int q = selected->process->quanta;
-
-				if (q == 1)          // A
-					selected->currentQuanta = baseQuanta * 1;
-				else if (q == 2)     // B
-					selected->currentQuanta = baseQuanta * 2;
-				else                 // C
-					selected->currentQuanta = baseQuanta * 4;
+				int multiplier;
+				switch (selected->process->group) {
+					case GROUP_B: multiplier = 2; break;
+					case GROUP_C: multiplier = 4; break;
+					default:      multiplier = 1; break; /* GROUP_A */
+				}
+				selected->currentQuanta = baseQuanta * multiplier;
 			}
 			
 			break;

@@ -128,5 +128,8 @@
 	ID(getQuantaForProcess) \
     ID(setVariable) \
     ID(getVariable) \
-	ID(maxChildrenInRanges)
+	ID(maxChildrenInRanges) \
+	\
+	ID(setProcessGroup) \
+	ID(getProcessGroup)
 /* clang-format on */
