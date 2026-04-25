@@ -1,3 +1,3 @@
 NAME := setQuantaForProcess
-LOCAL_SRCS := main.c ../include/syscalls_custom.S
+LOCAL_SRCS := main.c ../include/syscalls_custom.c
 include $(binary.mk)
