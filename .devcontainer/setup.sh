@@ -1,17 +1,27 @@
 #!/bin/bash
-# setup.sh — Build Phoenix-RTOS native toolchain di GitHub Codespaces (tanpa Docker)
-# Dijalankan otomatis saat postCreateCommand
-# Mengikuti: https://github.com/phoenix-rtos/phoenix-rtos-doc (Building using the native toolchain)
+# setup.sh — Install dependencies Phoenix-RTOS di GitHub Codespaces
+# Dijalankan otomatis saat postCreateCommand (cepat, <2 menit)
+# Build toolchain dilakukan manual setelah container siap.
 
 set -e
 
 echo "════════════════════════════════════════════════════"
-echo "  🔧 Phoenix-RTOS Native Build Setup (No Docker)  "
+echo "  🔧 Phoenix-RTOS Environment Setup (No Docker)   "
 echo "════════════════════════════════════════════════════"
 
-# ─── 1. Install semua dependency yang dibutuhkan ──────────────────────────────
+# Verifikasi kita di Ubuntu (bukan Alpine)
+if [ -f /etc/os-release ]; then
+    . /etc/os-release
+    echo "📋 OS Detected: $PRETTY_NAME"
+    if [[ "$ID" != "ubuntu" ]]; then
+        echo "⚠️  WARNING: Expected Ubuntu but got $ID"
+        echo "   Pastikan container sudah di-rebuild!"
+    fi
+fi
+
+# ─── Install semua dependency yang dibutuhkan ─────────────────────────────────
 echo ""
-echo "📦 [1/4] Installing required build tools..."
+echo "📦 [1/3] Installing required build tools..."
 
 sudo apt-get update -q && sudo apt-get install -y \
     build-essential \
@@ -21,65 +31,55 @@ sudo apt-get update -q && sudo apt-get install -y \
     genext2fs \
     libtool \
     libhidapi-dev \
+    libhidapi-hidraw0 \
     python3 \
     wget \
     bc \
     rsync \
     bzip2 \
     xz-utils \
-    qemu-system-x86
+    qemu-system-x86 \
+    scons
 
 echo "✅ Build tools installed."
 
-# ─── 2. Init submodules ───────────────────────────────────────────────────────
+# ─── Init submodules ───────────────────────────────────────────────────────────
 echo ""
-echo "📦 [2/4] Initializing git submodules..."
+echo "📦 [2/3] Initializing git submodules..."
 git submodule update --init --recursive
 echo "✅ Submodules ready."
 
-# ─── 3. Build cross-compiler toolchain ───────────────────────────────────────
+# ─── Siapkan direktori toolchain ──────────────────────────────────────────────
 echo ""
-echo "🔨 [3/4] Building i386-pc-phoenix cross-compiler toolchain..."
-echo "   ⚠️  Proses ini memakan waktu ±30-60 menit. Harap tunggu."
-echo ""
+echo "📁 [3/3] Preparing toolchain directory..."
 
 TOOLCHAIN_DIR="$HOME/toolchains"
+TOOLCHAIN_BIN="$TOOLCHAIN_DIR/i386-pc-phoenix/i386-pc-phoenix/bin"
 mkdir -p "$TOOLCHAIN_DIR"
 
-if [ ! -f "$TOOLCHAIN_DIR/i386-pc-phoenix/i386-pc-phoenix/bin/i386-pc-phoenix-gcc" ]; then
-    echo "   Toolchain belum ada, memulai build..."
-    (cd phoenix-rtos-build/toolchain/ && \
-        ./build-toolchain.sh i386-pc-phoenix "$TOOLCHAIN_DIR/i386-pc-phoenix")
-    echo "✅ Toolchain berhasil dibangun."
-else
-    echo "✅ Toolchain sudah ada, skip build."
-fi
-
-# ─── 4. Set PATH ─────────────────────────────────────────────────────────────
-echo ""
-echo "🔧 [4/4] Configuring PATH..."
-
-TOOLCHAIN_BIN="$TOOLCHAIN_DIR/i386-pc-phoenix/i386-pc-phoenix/bin"
-
-# Tambahkan ke .bashrc agar persisten
-if ! grep -q "i386-pc-phoenix" "$HOME/.bashrc"; then
+# Tambahkan PATH ke .bashrc (persisten)
+if ! grep -q "i386-pc-phoenix" "$HOME/.bashrc" 2>/dev/null; then
     echo "export PATH=\$PATH:$TOOLCHAIN_BIN" >> "$HOME/.bashrc"
+    echo "✅ PATH entry added to .bashrc"
 fi
 
-# Export untuk sesi ini juga
-export PATH="$PATH:$TOOLCHAIN_BIN"
-echo "✅ PATH configured."
+echo "✅ Ready."
 
-# ─── Done ─────────────────────────────────────────────────────────────────────
+# ─── Done ──────────────────────────────────────────────────────────────────────
 echo ""
 echo "════════════════════════════════════════════════════"
-echo "  ✅ Setup selesai! Phoenix-RTOS siap di-build     "
+echo "  ✅ Setup awal selesai!                           "
 echo "════════════════════════════════════════════════════"
 echo ""
-echo "  Cara build (TANPA Docker):"
+echo "  ⚠️  LANGKAH SELANJUTNYA — Build toolchain dulu:"
+echo "  Jalankan sekali saja (±30-60 menit):"
+echo ""
+echo "  bash .devcontainer/build-toolchain.sh"
+echo ""
+echo "  Setelah toolchain selesai, baru build Phoenix-RTOS:"
 echo "  TARGET=ia32-generic-qemu CONSOLE=serial \\"
 echo "    ./phoenix-rtos-build/build.sh all"
 echo ""
-echo "  Jalankan QEMU setelah build:"
+echo "  Jalankan QEMU:"
 echo "  ./run-qemu.sh"
 echo "════════════════════════════════════════════════════"
