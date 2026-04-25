@@ -25,5 +25,5 @@ qemu-system-i386 \
     -serial mon:stdio \
     -m 256 \
     -net nic,model=rtl8139 \
-    -net user \
+    -net user,hostfwd=tcp::5556-:23 \
     -no-reboot
