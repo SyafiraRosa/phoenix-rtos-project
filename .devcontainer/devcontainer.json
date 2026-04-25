@@ -1,0 +1,32 @@
+{
+  "name": "Phoenix-RTOS Build Environment",
+  "image": "phoenixrtos/build:latest",
+  "features": {
+    "ghcr.io/devcontainers/features/git:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {}
+  },
+  "postCreateCommand": "git submodule update --init --recursive",
+  "containerEnv": {
+    "TARGET": "ia32-generic-qemu"
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode.cpptools",
+        "ms-vscode.cpptools-extension-pack",
+        "ms-vscode.cmake-tools",
+        "mhutchie.git-graph",
+        "eamodio.gitlens"
+      ],
+      "settings": {
+        "terminal.integrated.defaultProfile.linux": "bash",
+        "C_Cpp.default.compilerPath": "/usr/bin/gcc",
+        "C_Cpp.default.cStandard": "c11"
+      }
+    }
+  },
+  "remoteUser": "root",
+  "mounts": [],
+  "forwardPorts": [],
+  "postStartCommand": "echo '✅ Phoenix-RTOS dev environment ready! Run: ./docker-build.sh' && git submodule status"
+}

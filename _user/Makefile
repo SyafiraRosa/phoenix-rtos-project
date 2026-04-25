@@ -24,3 +24,7 @@ DEFAULT_COMPONENTS := $(ALL_COMPONENTS)
 all: $(DEFAULT_COMPONENTS)
 install: $(patsubst %,%-install,$(DEFAULT_COMPONENTS))
 clean: $(patsubst %,%-clean,$(ALL_COMPONENTS))
+
+SUBDIRS += maxChildrenInRanges
+# SUBDIRS += scheduling
+SUBDIRS += getBaseQuanta setBaseQuanta getQuantaForProcess setQuantaForProcess infiniteProcesses
