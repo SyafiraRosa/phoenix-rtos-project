@@ -13,6 +13,10 @@ include ../phoenix-rtos-build/Makefile.common
 # default path for the programs to be installed in rootfs
 DEFAULT_INSTALL_PATH := /usr/bin
 
+# Include custom syscall headers (scheduling.h, getsetvariable.h, maxchildreninranges.h)
+# These are copied from libphoenix/include to avoid submodule dependency in Codespaces
+CFLAGS += -I$(CURDIR)/include
+
 # read out all components
 ALL_MAKES := $(shell find . -mindepth 2 -name Makefile -not -path '*/.*')
 include $(ALL_MAKES)
