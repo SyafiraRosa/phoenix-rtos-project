@@ -1,4 +1,4 @@
 NAME := getVariable
-LOCAL_SRCS := main.c
+LOCAL_SRCS := main.c ../include/syscalls_custom.S
 
 include $(binary.mk)
