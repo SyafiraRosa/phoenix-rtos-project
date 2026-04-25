@@ -5,10 +5,8 @@
 set -e
 
 echo "🔧 Installing build tools..."
-
 sudo apt-get update -q
 
-# Tools dasar dan QEMU (mode serial/nographic untuk Codespaces)
 sudo apt-get install -y \
     make \
     wget \
@@ -23,24 +21,36 @@ sudo apt-get install -y \
     e2fsprogs \
     bc \
     rsync \
-    scons
+    scons \
+    ca-certificates \
+    gnupg \
+    lsb-release
 
+# ─── Install Docker jika belum ada ──────────────────────────────────────────
+if ! command -v docker &>/dev/null; then
+    echo "🐳 Docker tidak ditemukan. Menginstall Docker..."
+    curl -fsSL https://get.docker.com | sudo sh
+    sudo usermod -aG docker "${USER:-vscode}"
+    echo "✅ Docker berhasil diinstall."
+else
+    echo "✅ Docker sudah tersedia: $(docker --version)"
+fi
+
+# ─── Init submodules ─────────────────────────────────────────────────────────
 echo "📦 Initializing git submodules..."
 git submodule update --init --recursive
 
 echo ""
-echo "✅ Setup selesai!"
+echo "════════════════════════════════════════════════"
+echo "  ✅ Setup selesai! Phoenix-RTOS siap di-build  "
+echo "════════════════════════════════════════════════"
 echo ""
-echo "══════════════════════════════════════════"
-echo "  CARA BUILD Phoenix-RTOS di Codespaces  "
-echo "══════════════════════════════════════════"
+echo "  1️⃣  Build:"
+echo "     TARGET=ia32-generic-qemu CONSOLE=serial ./docker-build.sh all"
 echo ""
-echo "  Build menggunakan Docker (WAJIB):"
-echo "  TARGET=ia32-generic-qemu ./docker-build.sh all"
+echo "  2️⃣  Jalankan QEMU:"
+echo "     ./run-qemu.sh"
 echo ""
-echo "  Jalankan QEMU (serial mode):"
-echo "  TARGET=ia32-generic-qemu CONSOLE=serial ./docker-build.sh qemu"
-echo ""
-echo "  Atau cukup:"
-echo "  ./run-qemu.sh"
-echo "══════════════════════════════════════════"
+echo "  ⚠️  Jika muncul 'permission denied' untuk docker, jalankan:"
+echo "     newgrp docker"
+echo "════════════════════════════════════════════════"
