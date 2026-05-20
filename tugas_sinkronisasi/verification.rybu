@@ -1,0 +1,178 @@
+server sem {
+    var state : {up, down};
+    { p | state == :up } -> { state = :down; return :ok; }
+    { v | state == :down } -> { state = :up; return :ok; }
+}
+
+server buf_state {
+    var even_c : 0..2;
+    var odd_c  : 0..2;
+    var total  : 0..4;
+    var wA1 : 0..1;
+    var wA2 : 0..1;
+    var wB1 : 0..1;
+    var wB2 : 0..1;
+
+    { prodEven | even_c < 2 && total < 4 } ->
+        { even_c = even_c + 1; total = total + 1; return :ok; }
+
+    { prodOdd | even_c > odd_c && total < 4 } ->
+        { odd_c = odd_c + 1; total = total + 1; return :ok; }
+
+    { consEven | total >= 2 && even_c > 0 } ->
+        { even_c = even_c - 1; total = total - 1; return :ok; }
+
+    { consOdd | total >= 3 && odd_c > 0 } ->
+        { odd_c = odd_c - 1; total = total - 1; return :ok; }
+
+    { setWA1 } -> { wA1 = 1; return :ok; }
+    { clrWA1 } -> { wA1 = 0; return :ok; }
+    { setWA2 } -> { wA2 = 1; return :ok; }
+    { clrWA2 } -> { wA2 = 0; return :ok; }
+    { setWB1 } -> { wB1 = 1; return :ok; }
+    { clrWB1 } -> { wB1 = 0; return :ok; }
+    { setWB2 } -> { wB2 = 1; return :ok; }
+    { clrWB2 } -> { wB2 = 0; return :ok; }
+
+    { chkCanA1 | even_c < 2 }    -> { return :yes; }
+    { chkCanA1 | even_c >= 2 }   -> { return :no; }
+    { chkCanA2 | even_c > odd_c } -> { return :yes; }
+    { chkCanA2 | even_c <= odd_c }-> { return :no; }
+    { chkCanB1 | total >= 2 && even_c > 0 } -> { return :yes; }
+    { chkCanB1 | total < 2 } -> { return :no; }
+    { chkCanB1 | even_c == 0 } -> { return :no; }
+    { chkCanB2 | total >= 3 && odd_c > 0 } -> { return :yes; }
+    { chkCanB2 | total < 3 } -> { return :no; }
+    { chkCanB2 | odd_c == 0 } -> { return :no; }
+
+    { chkWakeA1 | wA1 > 0 && even_c < 2 && total < 4 } -> { return :yes; }
+    { chkWakeA1 | wA1 == 0 } -> { return :no; }
+    { chkWakeA1 | even_c == 2 } -> { return :no; }
+    { chkWakeA1 | total == 4 } -> { return :no; }
+
+    { chkWakeA2 | wA2 > 0 && even_c > odd_c && total < 4 } -> { return :yes; }
+    { chkWakeA2 | wA2 == 0 } -> { return :no; }
+    { chkWakeA2 | even_c <= odd_c } -> { return :no; }
+    { chkWakeA2 | total == 4 } -> { return :no; }
+
+    { chkWakeB1 | wB1 > 0 && total >= 2 && even_c > 0 } -> { return :yes; }
+    { chkWakeB1 | wB1 == 0 } -> { return :no; }
+    { chkWakeB1 | total < 2 } -> { return :no; }
+    { chkWakeB1 | even_c == 0 } -> { return :no; }
+
+    { chkWakeB2 | wB2 > 0 && total >= 3 && odd_c > 0 } -> { return :yes; }
+    { chkWakeB2 | wB2 == 0 } -> { return :no; }
+    { chkWakeB2 | total < 3 } -> { return :no; }
+    { chkWakeB2 | odd_c == 0 } -> { return :no; }
+}
+
+var buf   = buf_state() { even_c = 0, odd_c = 0, total = 0, wA1 = 0, wA2 = 0, wB1 = 0, wB2 = 0 };
+var mutex = sem() { state = :up };
+var sA1   = sem() { state = :down };
+var sA2   = sem() { state = :down };
+var sB1   = sem() { state = :down };
+var sB2   = sem() { state = :down };
+
+thread A1() {
+    loop {
+        mutex.p();
+        match buf.chkCanA1() {
+            :yes => {
+                buf.prodEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+            :no => {
+                buf.setWA1();
+                mutex.v();
+                sA1.p();
+                buf.clrWA1();
+                buf.prodEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+        }
+    }
+}
+
+thread A2() {
+    loop {
+        mutex.p();
+        match buf.chkCanA2() {
+            :yes => {
+                buf.prodOdd();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+            :no => {
+                buf.setWA2();
+                mutex.v();
+                sA2.p();
+                buf.clrWA2();
+                buf.prodOdd();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+        }
+    }
+}
+
+thread B1() {
+    loop {
+        mutex.p();
+        match buf.chkCanB1() {
+            :yes => {
+                buf.consEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+            :no => {
+                buf.setWB1();
+                mutex.v();
+                sB1.p();
+                buf.clrWB1();
+                buf.consEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+        }
+    }
+}
+
+thread B2() {
+    loop {
+        mutex.p();
+        match buf.chkCanB2() {
+            :yes => {
+                buf.consOdd();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+            :no => {
+                buf.setWB2();
+                mutex.v();
+                sB2.p();
+                buf.clrWB2();
+                buf.consOdd();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+        }
+    }
+}

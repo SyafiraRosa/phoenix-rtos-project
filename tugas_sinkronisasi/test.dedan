@@ -1,0 +1,26 @@
+server: sem (servers S_T1; agents A_T1),
+services {p, v},
+states {state_up, state_down},
+actions {
+  {A_T1.sem.p, sem.state_up} -> {A_T1.S_T1.ok, sem.state_down},
+  {A_T1.sem.v, sem.state_down} -> {A_T1.S_T1.ok, sem.state_up},
+};
+
+server: S_T1 (servers mutex: sem; agents A_T1),
+services {ok},
+states {s0_mutex_p, s3_mutex_v},
+actions {
+  {A_T1.S_T1.ok, S_T1.s0_mutex_p} -> {A_T1.mutex.v, S_T1.s3_mutex_v},
+  {A_T1.S_T1.ok, S_T1.s3_mutex_v} -> {A_T1.mutex.p, S_T1.s0_mutex_p},
+};
+
+agents A_T1;
+
+servers S_T1, mutex: sem;
+
+init -> {
+  mutex(S_T1,A_T1).state_up,
+  S_T1(mutex,A_T1).s0_mutex_p,
+  A_T1.mutex.p,
+}.
+

@@ -1,0 +1,152 @@
+
+model = [title] system
+
+title = system sys_id â;â
+system = server_view | agent_view
+server_view = server_types [ agent_types_list ] 
+variables server_view_init
+agent_view = server_headers agent_types varibles agent_view_init
+
+server_types = { server_type }
+server_type = server_header actions â;â
+server_header = server_relations elements
+server_relations = server â:â  serv_type_id 
+â(â server_formal_pars â),â
+server_formal_pars = formal_pars_servers â;â formal_pars_agents | formal_pars_agents â;â formal_pars_servers
+formal_pars_servers = servers servers_formal_pars_list
+formal_pars_agents = agents agents_formal_pars_list
+servers_formal_pars_list = server_formal_par { â,â server_formal_par }
+agents_formal_pars_list = agent_formal_par { â,â agent_formal_par }
+server_formal_par =
+server_formal_par_id [ â[â vector_size â]â ]  
+[ â:â server_type_id ] | 
+server_formal_par_id [ â[â vector_size â]â ] â:â âselfâ
+agent_formal_par = agent_formal_par_id [ â[â vector_size â]â ]  
+[ â:â agent_type_id ] | 
+agent_formal_par_id [ â[â vector_size â]â ] â:â âselfâ
+
+elements = states services | services states
+states = states â{â state_list â},â
+services = services â{â service_list â},â
+state_list = state_def { â,â state_def }
+service_list = service_def> { â,âservice_def }
+state_def = state_id [ â[â vector_size â]â ]
+service_def = service_id> [ â[â vector_size â]â ]
+
+actions = actions â{â action_list â},â
+action_list = action { action }
+action = [ condition ] [ repeaters ] input -> output â,â
+condition = â?â instance_number
+repeaters = repeater | repeater repeater | repeater repeater repeater
+repeater = â<â repeater_id lower_limit â..â upper_limit â>â
+input = â{â message â,â serv_state â}â
+output = â{â message â,â serv_state â}â | â{â serv_state â}â
+message = agent_term â.â server_term â.â service_term
+serv_state = server_term â.â state_term
+agent_term = agent_id  [ â[â index â]â ]
+server_term = server_id [ â[â index â]â ]
+
+service_term = service_id [ â[â expression â]â ]
+state_term = state_id [ â[â expression â]â ]
+
+agent_types_list = agent â:â agent_types_id_list â;â
+agent_types_id_list = agent_type_id { â,â agent_type_id }
+
+variables = server_variables agent_variables | 
+agent_variables server_variables
+server_variables = servers server_variable_list â;â
+agent_variables = agents agent_variable_list â;â
+server_variable_list = server_decl { â,â server_decl }
+server_decl = server_id [ â[â vector_size â]â ]  
+[ â:â server_type_id ] 
+agent_variable_list =  agent_decl { â,â agent_decl }
+agent_decl = agent_id [ â[â vector_size â]â ]  
+[ â:â agent_type_id ]
+
+server_view_init = init â->â â{â <server_view_init_list> â}â
+server_view_init_list = server_view_init { server_view_init }
+server_view_init = server_view_server_init server_view_agent_init | server_view_agent_init server_view_server_init 
+server_view_server_init = repeater server_id â[â index â]â 
+â(â server_view_parameter_list â).â server_init â,â |
+	server_id â(â server_view_parameter_list â).â server_init â,â
+server_view_agent_init = repeater agent_id â[â index â]â â.â
+agent_init â,â | agent_id â.â agent_init â,â
+server_view_parameter_list = server_view_parameter
+{ â,â server_view_parameter }
+server_view_parameter = server_parameter | agent_parameter
+server_parameter = server_id [ â[â index_list â]â ]
+agent_parameter = agent_id [ â[â index_list â]â ]
+index_list = index { â,â index } | index â..â index
+server_init = state_id [ â[â index â]â ]
+agent_init = server_id [ â[â index â]â ] â.â 
+service_id [ â[â index â]â ]
+
+server_headers = server_header â;â { server_header â;â }
+agent_types = agent_type { agent_type }
+agent_type = agent_header actions â;â
+agent_header = agent â:â agent_type_id â(â formal_pars_servers â),â
+
+agent_view_init = init â->â â{â agent_view_init_list â}â
+agent_view_init_list = agent_view_init { agent_view_init }
+agent_view_init = agent_view_server_init agent_view_agent_init | agent_view_agent_init agent_view_server_init
+agent_view_server_init = repeater server_id â[â index â]â â.â
+server_init â,â |
+server_id â.â server_init â,â
+agent_view_agent_init = repeater agent_id â[â index â]â
+â(â agent_view_parameter_list â).â agent_init â,â | 
+	agent_id â(â agent_view_parameter_list â).â agent_init â,â
+agent_view_parameter_list = agent_view_parameter 
+{ â,â agent_view_parameter }
+agent_view_parameter = server_parameter
+
+system_id = identifier
+server_type_id = identifier
+agent_type_id = identifier
+server_formal_par_id = identifier
+agent_formal_par_id = identifier
+server_id = identifier
+agent_id = identifier
+state_id = identifier
+service_id = identifier
+repeater_id = identifier
+lower_limit = number
+upper_limit = number
+vector_size = number
+instance_number = number
+expression = number | repeater_id | number operator number | repeater_id operator number |
+	number operator repeater_id
+operator = â+â | â-â
+number = digit { digit }
+identifier = letter { character }
+digit = â0â .. â9â
+letter = âAâ .. âZâ | âaâ .. âzâ
+character = letter | digit | â_â
+
+Changes in Timed IMDS:
+system = server_view 
+server_view = server_types [ agent_types_list ] 
+variables [ channels ] server_view_init
+channels = channels â;â | channels â{â delays â}â
+delays = delay [ â,â delay ]
+delay = constraint | server_ spec constraint | 
+server_spec â->â server_spec constraint
+server_spec = server_id [ â[â server_subrange â]â ]
+server_ subrange = number | â-â number | number â%â number | 
+â-â number â%â number
+elements = states services [ bounds ] | services states [ bounds ]
+bounds = bounds â{â bound { â,â bound } â}â
+bound = [ condition ] â?â clk â(â bound finishing_bracket state_id 
+[ â[â index â]â ] â)â
+action = [ condition ] [ restriction ] [ reset ] [ repeaters ] 
+input -> [ duration ] output â,â
+condition = â?â 
+restriction = â?â clk 
+duration = constraint 
+constraint = starting_bracket number [ â,â number ] finishing_bracket
+starting_bracket = â(â | â<â
+finishing_bracket = â)â | â>â
+reset = â!â
+
+
+	
+	

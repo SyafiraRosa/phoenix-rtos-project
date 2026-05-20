@@ -1,0 +1,4 @@
+When implementing the task, a semaphore should be used for synchronization (only p and v operations) - the Semaphore class defined in the monitor.h file located on the course page. The task must be performed using threads (using global variables).
+
+
+9-element FIFO buffer. Two consumers and two producers. An item can be read from a buffer when the numer of items in the buffer is greater than 3. An item is removed from the buffer after being read by both consumers (by the second reader). Only the last item in the buffer can be read. The consumer can read a given element only once.

@@ -1,0 +1,15 @@
+server sem {
+    var state : {up, down};
+    { p | state == :up } -> { state = :down; return :ok; }
+    { v | state == :down } -> { state = :up; return :ok; }
+}
+
+var mutex = sem() { state = :up };
+
+thread T1() {
+    loop {
+        mutex.p();
+        skip;
+        mutex.v();
+    }
+}
