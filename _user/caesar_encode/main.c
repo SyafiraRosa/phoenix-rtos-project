@@ -62,9 +62,7 @@ static int handle_device_open(oid_t *device_oid)
 {
 	printf("Open oid %u:%u\n", (unsigned)device_oid->port, (unsigned)device_oid->id);
 
-	/* Reset buffers and counters when device is opened */
-	storage_len = 0;
-	memset(storage_buf, 0, BUF_SIZE);
+	/* Do not reset buffers here, so data persists between separate open calls (e.g. echo then cat) */
 
 	return 0;
 }
