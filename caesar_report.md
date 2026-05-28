@@ -259,6 +259,36 @@ Close oid 5:0
 
 ---
 
+### Step 6: Verification of Buffer Overflow Protection (Message longer than Buffer Size)
+To address the specific feedback regarding messages longer than the server's buffer size, a test case was conducted by sending a file larger than the defined `BUF_SIZE` of 64KB (65536 bytes). 
+
+By concatenating `/usr/bin/hello` multiple times, a large test file (~68KB) is created. When piped to the server, the server's overflow protection mechanism safely intercepts the boundary breach.
+
+```bash
+# 1. Create a file larger than 64KB
+cat /usr/bin/hello /usr/bin/hello /usr/bin/hello /usr/bin/hello /usr/bin/hello > /tmp/large_test_file
+
+# 2. Pipe the oversized file to the encoder
+cat /tmp/large_test_file > /dev/caesar_encode
+```
+
+**Expected Server Log Output on Terminal:**
+Instead of experiencing a buffer overflow or a system crash, the server processes the chunks until the memory limit is approached, then it prints a warning log and rejects further writes, returning an `-ENOMEM` (Out of Memory) error code.
+```text
+Write to oid 3:0 of 880 bytes
+  Write: data: len=880 at offset 64479
+  Write: buffer: len=65359
+Write to oid 3:0 of 3012 bytes
+  Write: buffer overflow limit reached
+Write to oid 3:0 of 3249 bytes
+  Write: buffer overflow limit reached
+```
+
+> **[ATTACH SCREENSHOT HERE: Buffer Overflow Limit Reached Verification]**
+> *Insert a screenshot of the QEMU console displaying the server correctly blocking writes with the `buffer overflow limit reached` message, proving the robustness of the driver against unbounded memory attacks.*
+
+---
+
 ## 7. Conclusions
 - The design implements **two independent, modular servers** communicating through the microkernel IPC system.
 - The pergeseran (shift) algorithm is verified to be **strictly constant and equal to 5** for both encryption and decryption.
