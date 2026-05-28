@@ -14,7 +14,7 @@
 
 using namespace std;
 
-// Synchronization primitives (using lecturer's Semaphore class)
+// Synchronization primitives
 Semaphore mutex_sem(1);
 Semaphore prodEvenSem(0), prodOddSem(0), consEvenSem(0), consOddSem(0);
 unsigned int numOfProdEvenWaiting = 0U, numOfProdOddWaiting = 0U, numOfConsEvenWaiting = 0U, numOfConsOddWaiting = 0U;

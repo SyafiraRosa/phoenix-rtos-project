@@ -99,7 +99,7 @@ public:
 
 private:
 	Semaphore w;
-	int waitingCount; //liczba oczekujacych watkow
+	int waitingCount;
 };
 
 

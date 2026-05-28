@@ -19,7 +19,7 @@
 /* For create_dev() */
 #include <posix/utils.h>
 
-#define BUF_SIZE 4096
+#define BUF_SIZE 65536
 #define CIPHER_SHIFT 5
 
 /* Internal storage for the cipher-text */
@@ -60,7 +60,7 @@ static void process_caesar_encode(const char *source, char *destination, size_t 
 
 static int handle_device_open(oid_t *device_oid)
 {
-	(void)device_oid;
+	printf("Open oid %u:%u\n", (unsigned)device_oid->port, (unsigned)device_oid->id);
 
 	/* Reset buffers and counters when device is opened */
 	storage_len = 0;
@@ -72,21 +72,24 @@ static int handle_device_open(oid_t *device_oid)
 
 static int handle_device_close(oid_t *device_oid)
 {
-	(void)device_oid;
+	printf("Close oid %u:%u\n", (unsigned)device_oid->port, (unsigned)device_oid->id);
 	return 0;
 }
 
 
 static ssize_t handle_device_read(oid_t *device_oid, void *user_buffer, size_t requested_len, off_t read_offset)
 {
-	(void)device_oid;
+	printf("Read from oid %u:%u of %zu bytes\n", (unsigned)device_oid->port, (unsigned)device_oid->id, requested_len);
 
 	if (read_offset < 0) {
+		printf("  Read: invalid offset %lld\n", (long long)read_offset);
 		return -EINVAL;
 	}
 
 	if ((size_t)read_offset >= storage_len) {
 		/* No more data to read */
+		printf("  Read: data: len=0\n");
+		printf("  Read: buffer: len=0\n");
 		return 0;
 	}
 
@@ -96,29 +99,42 @@ static ssize_t handle_device_read(oid_t *device_oid, void *user_buffer, size_t r
 	/* Copy processed cipher-text to the requesting user space */
 	memcpy(user_buffer, storage_buf + read_offset, bytes_to_copy);
 
+	printf("  Read: data: len=%zu\n", bytes_to_copy);
+	printf("  Read: buffer: len=%zu\n", remaining_bytes - bytes_to_copy);
+
 	return (ssize_t)bytes_to_copy;
 }
 
 
 static ssize_t handle_device_write(oid_t *device_oid, const void *user_data, size_t data_len, off_t write_offset)
 {
-	(void)device_oid;
-	(void)write_offset;
+	printf("Write to oid %u:%u of %zu bytes\n", (unsigned)device_oid->port, (unsigned)device_oid->id, data_len);
 
 	if (data_len == 0) {
 		return 0;
 	}
 
-	if (data_len > BUF_SIZE) {
+	if (write_offset < 0 || (size_t)write_offset >= BUF_SIZE) {
+		printf("  Write: invalid offset %lld\n", (long long)write_offset);
+		return -EINVAL;
+	}
+
+	if ((size_t)write_offset + data_len > BUF_SIZE) {
 		/* Limit inputs to prevent buffer overflows */
+		printf("  Write: buffer overflow limit reached\n");
 		return -ENOMEM;
 	}
 
-	/* Perform encryption and update buffer */
-	process_caesar_encode((const char *)user_data, storage_buf, data_len);
-	storage_len = data_len;
+	/* Perform encryption and update buffer at specified offset */
+	process_caesar_encode((const char *)user_data, storage_buf + write_offset, data_len);
+	
+	/* Update storage_len to reflect the maximum written position */
+	if ((size_t)write_offset + data_len > storage_len) {
+		storage_len = (size_t)write_offset + data_len;
+	}
 
-	printf("caesar_encode server: Successfully encrypted %zu bytes\n", data_len);
+	printf("  Write: data: len=%zu at offset %lld\n", data_len, (long long)write_offset);
+	printf("  Write: buffer: len=%zu\n", storage_len);
 
 	return (ssize_t)data_len;
 }

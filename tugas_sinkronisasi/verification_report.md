@@ -18,8 +18,49 @@ The guard conditions for the baton-passing queues were adjusted accordingly:
 
 This Rybu model implements one `mutex` server (acting as the Monitor entry) and four condition variable semaphores (`sA1`, `sA2`, `sB1`, `sB2`).
 
-> **[ATTACH CODE SNIPPET HERE]**
-> *Please copy and paste the beginning of the `verification.rybu` file (variable declarations and guard conditions like `chkCanA1`, etc.) here as proof of the formal modeling.*
+```rybu
+server buf_state {
+    var even_c : 0..2;
+    var odd_c  : 0..2;
+    var total  : 0..4;
+    var wA1 : 0..1;
+    var wA2 : 0..1;
+    var wB1 : 0..1;
+    var wB2 : 0..1;
+
+    { prodEven | even_c < 2 && total < 4 } ->
+        { even_c = even_c + 1; total = total + 1; return :ok; }
+
+    { prodOdd | even_c > odd_c && total < 4 } ->
+        { odd_c = odd_c + 1; total = total + 1; return :ok; }
+
+    { consEven | total >= 2 && even_c > 0 } ->
+        { even_c = even_c - 1; total = total - 1; return :ok; }
+
+    { consOdd | total >= 3 && odd_c > 0 } ->
+        { odd_c = odd_c - 1; total = total - 1; return :ok; }
+
+    { setWA1 } -> { wA1 = 1; return :ok; }
+    { clrWA1 } -> { wA1 = 0; return :ok; }
+    { setWA2 } -> { wA2 = 1; return :ok; }
+    { clrWA2 } -> { wA2 = 0; return :ok; }
+    { setWB1 } -> { wB1 = 1; return :ok; }
+    { clrWB1 } -> { wB1 = 0; return :ok; }
+    { setWB2 } -> { wB2 = 1; return :ok; }
+    { clrWB2 } -> { wB2 = 0; return :ok; }
+
+    { chkCanA1 | even_c < 2 }    -> { return :yes; }
+    { chkCanA1 | even_c >= 2 }   -> { return :no; }
+    { chkCanA2 | even_c > odd_c } -> { return :yes; }
+    { chkCanA2 | even_c <= odd_c }-> { return :no; }
+    { chkCanB1 | total >= 2 && even_c > 0 } -> { return :yes; }
+    { chkCanB1 | total < 2 } -> { return :no; }
+    { chkCanB1 | even_c == 0 } -> { return :no; }
+    { chkCanB2 | total >= 3 && odd_c > 0 } -> { return :yes; }
+    { chkCanB2 | total < 3 } -> { return :no; }
+    { chkCanB2 | odd_c == 0 } -> { return :no; }
+}
+```
 
 ## 3. Resolving the "Dropped Baton" Issue
 During the initial verification iteration, DedAn detected an **Agent Deadlock**. 
@@ -28,8 +69,33 @@ Upon analysis, the root cause was identified as a "Dropped Baton". In the initia
 **Solution:** 
 The *Passing the Baton* modeling was corrected by implementing a cascading condition evaluation (*nested match*) that perfectly mimics an `if - else if - else` structure. Every agent is now forced to check all possible queue conditions (`chkWakeA1`, `chkWakeA2`, `chkWakeB1`, `chkWakeB2`) sequentially before deciding to release the `mutex`.
 
-> **[ATTACH CODE SNIPPET HERE]**
-> *Please copy and paste one of the thread blocks from the `verification.rybu` file (e.g., the contents of `thread B1() { ... }`) that demonstrates the corrected nested `match` logic.*
+```rybu
+thread B1() {
+    loop {
+        mutex.p();
+        match buf.chkCanB1() {
+            :yes => {
+                buf.consEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+            :no => {
+                buf.setWB1();
+                mutex.v();
+                sB1.p();
+                buf.clrWB1();
+                buf.consEven();
+                match buf.chkWakeA1() { :yes => { sA1.v(); } :no => {
+                match buf.chkWakeA2() { :yes => { sA2.v(); } :no => {
+                match buf.chkWakeB1() { :yes => { sB1.v(); } :no => {
+                match buf.chkWakeB2() { :yes => { sB2.v(); } :no => { mutex.v(); } } } } } } } }
+            }
+        }
+    }
+}
+```
 
 ## 4. DedAn Verification Results
 After the Rybu model was corrected and recompiled into `verification.dedan`, the DedAn verifier was executed with the following results:
